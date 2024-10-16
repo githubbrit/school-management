@@ -1,0 +1,65 @@
+env:
+  AWS_REGION: "eu-central-1"  # Specify your AWS region if different
+
+  SSH_PRIVATE_KEY_DEV: ${{ secrets.SSH_PRIVATE_KEY_DEV }}  # Ensure your secrets are set up
+  EC2_HOST_DEV: ${{ secrets.EC2_HOST_DEV }}  # Provide your development server's host
+  EC2_USERNAME_DEV: ${{ secrets.EC2_USERNAME_DEV }}  # Provide your development server's username
+
+  SSH_PRIVATE_KEY_PROD: ${{ secrets.SSH_PRIVATE_KEY_PROD }}  # Ensure your secrets are set up
+  EC2_HOST_PROD: ${{ secrets.EC2_HOST_PROD }}  # Provide your production server's host
+  EC2_USERNAME_PROD: ${{ secrets.EC2_USERNAME_PROD }}  # Provide your production server's username
+
+jobs:
+  build:
+    ...
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dev-scripts
+          path: ./env/dev/scripts  # Ensure this path is correct for your dev scripts
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: prod-scripts
+          path: ./env/prod/scripts  # Ensure this path is correct for your prod scripts
+
+      - name: Build Docker image
+        run: |
+          docker build -t api ./api  # Ensure this is the correct context for your Dockerfile
+
+  deploy-dev:
+    ...
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY_GITHUB_ACTIONS }}  # Ensure your secret is set up
+          aws-secret-access-key: ${{ secrets.SECRET_KEY_GITHUB_ACTIONS }}  # Ensure your secret is set up
+          aws-region: ${{ env.AWS_REGION }}  # Change if needed
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: school-project-dev  # Ensure this matches your ECR repository name
+
+  deploy-prod:
+    ...
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY_GITHUB_ACTIONS }}  # Ensure your secret is set up
+          aws-secret-access-key: ${{ secrets.SECRET_KEY_GITHUB_ACTIONS }}  # Ensure your secret is set up
+          aws-region: ${{ env.AWS_REGION }}  # Change if needed
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: school-project-prod  # Ensure this matches your ECR repository name
+
+      - uses: geekyeggo/delete-artifact@v3
+        with:
+            name: |
+                school-project-image-artifact
+                dev-scripts
+                prod-scripts
