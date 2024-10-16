@@ -1,0 +1,9 @@
+version: "3.7"
+
+services:
+    api:
+        image: api-prod
+        container_name: prod-api
+        ports:
+            - "8080:4000"
+        restart: always

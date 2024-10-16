@@ -1,0 +1,30 @@
+# HTTP — redirect all traffic to HTTPS
+server {
+    if ($host = api.fnties.com) {
+        return 301 https://$host$request_uri;
+    }
+        listen 80;
+        listen [::]:80  ;
+    server_name api.fnties.com;
+    return 404;
+}
+
+server {
+    # Enable HTTP/2
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.fnties.com;
+
+    # Use the Let’s Encrypt certificates
+    ssl_certificate /etc/letsencrypt/live/api.fnties.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.fnties.com/privkey.pem;
+
+    location / {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_pass http://localhost:8080/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
