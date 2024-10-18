@@ -1,14 +1,1 @@
-version: "3.7"
-services:
-  api:
-    image: api-dev
-    container_name: dev-api
-    ports:
-      - "8080:3001"
-    restart: always
-    environment:
-      DB_HOST: fnties-dev-backend-database.cz0mmokqctdr.eu-central-1.rds.amazonaws.com
-      DB_PORT: 3306
-      DB_USER: admin
-      DB_PASS: Fnties12345
-      DB_NAME: newfnties
+
