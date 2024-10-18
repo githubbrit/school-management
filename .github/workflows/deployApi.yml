@@ -84,7 +84,7 @@ jobs:
         with:
           host: "${{ env.EC2_HOST_DEV }}"
           username: "${{ env.EC2_USERNAME_DEV }}"
-          key: "${{ secrets.SSH_PRIVATE_KEY }}"  # You can also hardcode this for testing
+          key: "${{ secrets.SSH_PRIVATE_KEY }}"
           port: 22
           source: dev-scripts
           target: "/home/ubuntu/"
@@ -94,7 +94,7 @@ jobs:
         with:
           host: "${{ env.EC2_HOST_DEV }}"
           username: "${{ env.EC2_USERNAME_DEV }}"
-          key: "${{ secrets.SSH_PRIVATE_KEY }}"  # You can also hardcode this for testing
+          key: "${{ secrets.SSH_PRIVATE_KEY }}"
           port: 22
           script: |
             chmod +x dev-scripts/build.sh
