@@ -1,5 +1,4 @@
-aws ecr --region $3 get-login-password | sudo docker login --username AWS --password-stdin  $1/$2
-
+aws ecr --region $3 get-login-password | sudo docker login --username AWS --password-stdin $1/$2
 
 if [ ! "$(sudo docker network ls | grep net)" ]; then
   echo "Creating net network ..."
@@ -14,13 +13,6 @@ if [ "$(sudo docker ps -aq -f name=nginx-proxy)" ]; then
     sudo docker rm nginx-proxy -f
 fi
 
-sudo cp dev-scripts/devapi.fnties /etc/nginx/sites-available/
-sudo ln -s /etc/nginx/sites-available/devapi.fnties /etc/nginx/sites-enabled/
-sudo rm /etc/nginx/sites-enabled/default
-sudo nginx -t
-sudo systemctl restart nginx
-
-
 cd $HOME/dev-scripts/
 
 sudo docker-compose down
@@ -28,6 +20,6 @@ sudo docker rm $(sudo docker ps -q) -f
 sudo docker rmi $(sudo docker images -q) -f
 
 sudo docker pull $1/$2:api-dev
-sudo docker tag  $1/$2:api-dev api-dev
+sudo docker tag $1/$2:api-dev api-dev
 
-sudo docker-compose up -d 
+sudo docker-compose up -d
