@@ -6,7 +6,7 @@ RUN npm install -f
 ENV NODE_ENV=$BUILD_ENV
 
 
-CMD ["node", "server.js"]
+CMD ["node", "app.js"]
 
 #CMD ["npm","start"]
 
