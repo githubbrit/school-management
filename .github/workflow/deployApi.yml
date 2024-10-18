@@ -1,65 +1,108 @@
+name: school-management API Deployment (Dev)
+
+on:
+  push:
+  workflow_dispatch:
+
 env:
-  AWS_REGION: "eu-central-1"  # Specify your AWS region if different
+  AWS_REGION: "ap-south-1"
 
-  SSH_PRIVATE_KEY_DEV: ${{ secrets.SSH_PRIVATE_KEY_DEV }}  # Ensure your secrets are set up
-  EC2_HOST_DEV: ${{ secrets.EC2_HOST_DEV }}  # Provide your development server's host
-  EC2_USERNAME_DEV: ${{ secrets.EC2_USERNAME_DEV }}  # Provide your development server's username
+  SSH_PRIVATE_KEY_DEV: "${{ secrets.SSH_PRIVATE_KEY }}"
+  EC2_HOST_DEV: "3.110.221.62"
+  EC2_USERNAME_DEV: "ubuntu"
 
-  SSH_PRIVATE_KEY_PROD: ${{ secrets.SSH_PRIVATE_KEY_PROD }}  # Ensure your secrets are set up
-  EC2_HOST_PROD: ${{ secrets.EC2_HOST_PROD }}  # Provide your production server's host
-  EC2_USERNAME_PROD: ${{ secrets.EC2_USERNAME_PROD }}  # Provide your production server's username
+  ECR_REGISTRY: "354918382863.dkr.ecr.ap-south-1.amazonaws.com/school-management"
+  AWS_ACCESS_KEY_ID: "AKIAVFIWIXUHQEEKG4TO"
+  AWS_SECRET_ACCESS_KEY: "g7dPOkSW2M1Bbqt3S7LzTrgs47PCbLcMsWwBG1BG"
 
 jobs:
   build:
-    ...
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove old artifacts
+        uses: c-hive/gha-remove-artifacts@v1
+        with:
+          age: '3600 seconds'
       - name: Checkout code
         uses: actions/checkout@v3
-
+        
       - uses: actions/upload-artifact@v3
         with:
           name: dev-scripts
-          path: ./env/dev/scripts  # Ensure this path is correct for your dev scripts
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: prod-scripts
-          path: ./env/prod/scripts  # Ensure this path is correct for your prod scripts
+          path: ./env/dev/scripts
 
       - name: Build Docker image
         run: |
-          docker build -t api ./api  # Ensure this is the correct context for your Dockerfile
+          docker build -t school-management ./api
+          docker save school-management -o school-management.tar
+
+      - name: Publish school-management image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: school-management-image-artifact
+          path: school-management.tar
 
   deploy-dev:
-    ...
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:          
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Download images artifact
+        uses: actions/download-artifact@v3
         with:
-          aws-access-key-id: ${{ secrets.ACCESS_KEY_GITHUB_ACTIONS }}  # Ensure your secret is set up
-          aws-secret-access-key: ${{ secrets.SECRET_KEY_GITHUB_ACTIONS }}  # Ensure your secret is set up
-          aws-region: ${{ env.AWS_REGION }}  # Change if needed
+          name: school-management-image-artifact
+
+      - name: Load Docker images
+        run: |
+          docker load -i school-management.tar
+
+      - name: Configure AWS credentials
+        run: |
+          aws configure set aws_access_key_id "AKIAVFIWIXUHQEEKG4TO"
+          aws configure set aws_secret_access_key "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"
+          aws configure set region "ap-south-1"
+
+      - name: Login to Amazon ECR
+        run: |
+          echo "AKIAVFIWIXUHQEEKG4TO" | docker login -u AWS --password-stdin 354918382863.dkr.ecr.ap-south-1.amazonaws.com
 
       - name: Build, tag, and push image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: school-project-dev  # Ensure this matches your ECR repository name
+        run: |
+          docker tag school-management 354918382863.dkr.ecr.ap-south-1.amazonaws.com/school-management:latest
+          docker push 354918382863.dkr.ecr.ap-south-1.amazonaws.com/school-management:latest
 
-  deploy-prod:
-    ...
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      - uses: actions/download-artifact@v3
         with:
-          aws-access-key-id: ${{ secrets.ACCESS_KEY_GITHUB_ACTIONS }}  # Ensure your secret is set up
-          aws-secret-access-key: ${{ secrets.SECRET_KEY_GITHUB_ACTIONS }}  # Ensure your secret is set up
-          aws-region: ${{ env.AWS_REGION }}  # Change if needed
+          name: dev-scripts
+          path: dev-scripts
 
-      - name: Build, tag, and push image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: school-project-prod  # Ensure this matches your ECR repository name
-
-      - uses: geekyeggo/delete-artifact@v3
+      - name: Copy scripts to dev-server
+        uses: appleboy/scp-action@v0.1.4
         with:
-            name: |
-                school-project-image-artifact
-                dev-scripts
-                prod-scripts
+          host: "3.110.221.62"
+          username: "ubuntu"
+          key: "${{ secrets.SSH_PRIVATE_KEY }}"
+          port: 22
+          source: dev-scripts
+          target: "/home/ubuntu/"
+        
+      - name: Connect to dev-server
+        uses: appleboy/ssh-action@master
+        with:
+          host: "3.110.221.62"
+          username: "ubuntu"
+          key: "${{ secrets.SSH_PRIVATE_KEY }}"
+          port: 22
+          script: |
+            chmod +x dev-scripts/build.sh
+            chmod +x dev-scripts/install.sh
+            dev-scripts/install.sh 
+            dev-scripts/build.sh 354918382863.dkr.ecr.ap-south-1.amazonaws.com/school-management school-management ap-south-1
+
+      - name: Clean up artifacts
+        uses: geekyeggo/delete-artifact@v3
+        with:
+          name: school-management-image-artifact
