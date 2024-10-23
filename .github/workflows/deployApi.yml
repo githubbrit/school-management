@@ -58,7 +58,10 @@ jobs:
           aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
           aws configure set region "${{ env.AWS_REGION }}"
 
-      - name: Login to Amazon ECR
+      - name: Login to ECR
+        env:
+          AWS_REGION: ap-south-1
+          ECR_REGISTRY: 061039766524.dkr.ecr.ap-south-1.amazonaws.com/school-management
         run: |
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
