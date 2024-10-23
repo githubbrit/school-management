@@ -16,6 +16,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
+      - name: List dev scripts
+        run: ls -R ./dev/scripts  # List files to ensure they exist
+      
       - name: Build Docker image
         run: |
           docker build -t school-management ./api
@@ -24,7 +27,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: dev-scripts
-          path: ./dev/scripts  # Adjust this path if your scripts are located elsewhere
+          path: ./dev/scripts  # Ensure this path is correct
 
       - name: Configure AWS credentials
         run: |
