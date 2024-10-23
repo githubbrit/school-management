@@ -6,11 +6,11 @@ on:
 
 env:
   AWS_REGION: "ap-south-1"
-  EC2_HOST_DEV: "3.110.221.62"
+  EC2_HOST_DEV: "65.0.109.14"
   EC2_USERNAME_DEV: "ubuntu"
-  ECR_REGISTRY: "354918382863.dkr.ecr.ap-south-1.amazonaws.com/school-management"
-  AWS_ACCESS_KEY_ID: "AKIAVFIWIXUHQEEKG4TO"  # Replace with your access key
-  AWS_SECRET_ACCESS_KEY: "g7dPOkSW2M1Bbqt3S7LzTrgs47PCbLcMsWwBG"  # Replace with your secret key
+  ECR_REGISTRY: ""
+  AWS_ACCESS_KEY_ID: ""  # Replace with your access key
+  AWS_SECRET_ACCESS_KEY: ""  # Replace with your secret key
 
 jobs:
   build:
