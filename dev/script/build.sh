@@ -13,7 +13,7 @@ if [ "$(sudo docker ps -aq -f name=nginx-proxy)" ]; then
     sudo docker rm nginx-proxy -f
 fi
 
-cd $HOME/dev-scripts/
+cd $HOME/dev-script/
 
 sudo docker-compose down
 sudo docker rm $(sudo docker ps -q) -f
