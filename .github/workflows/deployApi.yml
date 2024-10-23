@@ -103,8 +103,8 @@ jobs:
             dev-script/install.sh 
             dev-script/build.sh ${{ env.ECR_REGISTRY }} school-management ${{ env.AWS_REGION }}
 
-      - uses: geekyeggo/delete-artifact@v3
-        with:
-          name: |
-            school-management-image-artifact
-            dev
+            - uses: geekyeggo/delete-artifact@v5.1.0
+               with:
+               name: |
+               school-management-image-artifact
+               dev-script
