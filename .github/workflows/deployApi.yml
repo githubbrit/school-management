@@ -10,7 +10,7 @@ env:
   SSH_PRIVATE_KEY_DEV: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
   EC2_HOST_DEV: ${{ secrets.EC2_HOST_DEV }} 
   EC2_USERNAME_DEV: ${{ secrets.EC2_USERNAME_DEV }}
-  ECR_REGISTRY: "061039766524.dkr.ecr.ap-south-1.amazonaws.com/school-management"
+  ECR_REGISTRY: "120569634557.dkr.ecr.ap-south-1.amazonaws.com/school-management"
 
 jobs:
   build:
@@ -64,4 +64,7 @@ jobs:
           key: "${{ secrets.SSH_PRIVATE_KEY_DEV }}"
           port: 22
           script: |
-    
+            chmod +x /home/ubuntu/dev-scripts/build.sh
+            chmod +x /home/ubuntu/dev-scripts/install.sh
+            /home/ubuntu/dev-scripts/install.sh 
+            /home/ubuntu/dev-scripts/build.sh "${{ env.ECR_REGISTRY }}" school-management "${{ env.AWS_REGION }}"
