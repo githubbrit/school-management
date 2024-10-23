@@ -20,6 +20,12 @@ jobs:
         run: |
           docker build -t school-management ./api
 
+      - name: Upload dev scripts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dev-scripts
+          path: ./dev/scripts  # Adjust this path if your scripts are located elsewhere
+
       - name: Configure AWS credentials
         run: |
           aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
