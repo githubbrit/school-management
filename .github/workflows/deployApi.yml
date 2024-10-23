@@ -82,14 +82,4 @@ jobs:
         uses: appleboy/scp-action@v0.1.4
         with:
           host: "${{ env.EC2_HOST_DEV }}"
-          username: "${{ env.EC2_USERNAME_DEV }}"
-          key: "${{ secrets.SSH_PRIVATE_KEY_DEV }}"
-          port: 22
-          source: dev-scripts/*
-          target: "/home/ubuntu/"
-        
-      - name: Connect to dev-server
-        uses: appleboy/ssh-action@master
-        with:
-          host: "${{ env.EC2_HOST_DEV }}"
-          username: "${{ env.EC2_USERNAME
+         
