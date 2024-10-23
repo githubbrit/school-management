@@ -4,14 +4,13 @@ on:
   push:
   workflow_dispatch:
 
-env:
-  AWS_REGION: "ap-south-1"
-  EC2_HOST_DEV: "65.0.109.14"
-  EC2_USERNAME_DEV: "ubuntu"
-  ECR_REGISTRY: ""
-  AWS_ACCESS_KEY_ID: ""  # Replace with your access key
-  AWS_SECRET_ACCESS_KEY: ""  # Replace with your secret key
+env:  AWS_REGION: "eu-central-1"
 
+  SSH_PRIVATE_KEY_DEV: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
+  EC2_HOST_DEV: ${{ secrets.EC2_HOST_DEV }} 
+  EC2_USERNAME_DEV: ${{ secrets.EC2_USERNAME_DEV }}
+
+ 
 jobs:
   build:
     runs-on: ubuntu-latest
