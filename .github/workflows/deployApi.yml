@@ -81,6 +81,9 @@ jobs:
         with:
           name: dev-script
 
+      - name: List files in dev-script directory
+        run: ls -la ./dev/script
+
       - name: Copy script to dev-server
         uses: appleboy/scp-action@v0.1.4
         with:
@@ -103,8 +106,8 @@ jobs:
             dev-script/install.sh 
             dev-script/build.sh ${{ env.ECR_REGISTRY }} school-management ${{ env.AWS_REGION }}
 
-            - uses: geekyeggo/delete-artifact@v5.1.0
-               with:
-               name: |
-               school-management-image-artifact
-               dev-script
+      - uses: geekyeggo/delete-artifact@v5.1.0
+        with:
+          name: |
+            school-management-image-artifact
+            dev-script
