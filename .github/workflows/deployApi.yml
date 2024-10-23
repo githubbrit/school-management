@@ -7,9 +7,6 @@ on:
 
 env:
   AWS_REGION: "ap-south-1"
-  SSH_PRIVATE_KEY_DEV: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
-  EC2_HOST_DEV: ${{ secrets.EC2_HOST_DEV }} 
-  EC2_USERNAME_DEV: ${{ secrets.EC2_USERNAME_DEV }}
   ECR_REGISTRY: "120569634557.dkr.ecr.ap-south-1.amazonaws.com/school-management"
 
 jobs:
@@ -22,6 +19,12 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t school-management ./api
+
+      - name: Configure AWS credentials
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          aws configure set region "${{ env.AWS_REGION }}"
 
       - name: Login to ECR
         run: |
@@ -49,8 +52,8 @@ jobs:
       - name: Copy scripts to dev-server
         uses: appleboy/scp-action@v0.1.4
         with:
-          host: "${{ env.EC2_HOST_DEV }}"
-          username: "${{ env.EC2_USERNAME_DEV }}"
+          host: "${{ secrets.EC2_HOST_DEV }}"
+          username: "${{ secrets.EC2_USERNAME_DEV }}"
           key: "${{ secrets.SSH_PRIVATE_KEY_DEV }}"
           port: 22
           source: dev-scripts/*
@@ -59,8 +62,8 @@ jobs:
       - name: Connect to dev-server
         uses: appleboy/ssh-action@master
         with:
-          host: "${{ env.EC2_HOST_DEV }}"
-          username: "${{ env.EC2_USERNAME_DEV }}"
+          host: "${{ secrets.EC2_HOST_DEV }}"
+          username: "${{ secrets.EC2_USERNAME_DEV }}"
           key: "${{ secrets.SSH_PRIVATE_KEY_DEV }}"
           port: 22
           script: |
