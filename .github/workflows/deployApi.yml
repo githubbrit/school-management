@@ -2,48 +2,44 @@ name: School Management API Deployment (Dev)
 
 on:
   push:
-    branches:
-      - main
+  - main:
 
 env:
   AWS_REGION: "ap-south-1"
   ECR_REGISTRY: "120569634557.dkr.ecr.ap-south-1.amazonaws.com/school-management"
-  IMAGE_TAG: "latest"  # You can change this to a versioning scheme if desired
+  
+  SSH_PRIVATE_KEY_DEV: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
+  EC2_HOST_DEV: ${{ secrets.EC2_HOST_DEV }} 
+  EC2_USERNAME_DEV: ${{ secrets.EC2_USERNAME_DEV }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Remove old artifacts
+        uses: c-hive/gha-remove-artifacts@v1
+        with:
+          age: '3600 seconds'
+      
       - name: Checkout code
         uses: actions/checkout@v3
-        
-      - name: List dev script
-        run: ls -R ./dev/script  # List files to ensure they exist
-      
-      - name: Build Docker image
-        run: |
-          docker build -t school-management:latest ./api
 
       - name: Upload dev script
         uses: actions/upload-artifact@v3
         with:
           name: dev-script
-          path: ./dev/script  # Ensure this path is correct
+          path: ./dev/script
 
-      - name: Configure AWS credentials
+      - name: Build Docker image
         run: |
-          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
-          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          aws configure set region "${{ env.AWS_REGION }}"  # Added region configuration
+          docker build -t school-management ./api
+          docker save school-management -o school-management.tar
 
-      - name: Login to ECR
-        run: |
-          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
-
-      - name: Tag and push image to Amazon ECR
-        run: |
-          docker tag school-management:latest ${{ env.ECR_REGISTRY }}:latest
-          docker push ${{ env.ECR_REGISTRY }}:latest
+      - name: Publish school-management image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: school-management-image-artifact
+          path: school-management.tar
 
   deploy-dev:
     runs-on: ubuntu-latest
@@ -52,31 +48,65 @@ jobs:
     steps:          
       - name: Checkout code
         uses: actions/checkout@v3
+        
+      - name: Download image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: school-management-image-artifact
 
+      - name: Load Docker images
+        run: |
+          docker load -i school-management.tar
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+      - name: Build, tag, and push image to Amazon ECR
+        run: |
+          docker tag school-management ${{ env.ECR_REGISTRY }}:latest
+          docker push ${{ env.ECR_REGISTRY }}:latest
+          
       - name: Download dev script
         uses: actions/download-artifact@v3
         with:
           name: dev-script
           path: dev-script
 
-      - name: Copy scripts to dev-server
+      - name: Copy script to dev-server
         uses: appleboy/scp-action@v0.1.4
         with:
-          host: "${{ secrets.EC2_HOST_DEV }}"
-          username: "${{ secrets.EC2_USERNAME_DEV }}"
-          key: "${{ secrets.SSH_PRIVATE_KEY_DEV }}"
+          host: ${{ env.EC2_HOST_DEV }}
+          username: ${{ env.EC2_USERNAME_DEV }}
+          key: ${{ env.SSH_PRIVATE_KEY_DEV }}
           port: 22
           source: dev-script/*
-          target: "/home/ubuntu/"
+          target: "/home/${{ env.EC2_USERNAME_DEV }}/"
         
       - name: Connect to dev-server
         uses: appleboy/ssh-action@master
         with:
-          host: "${{ secrets.EC2_HOST_DEV }}"
-          username: "${{ secrets.EC2_USERNAME_DEV }}"
-          key: "${{ secrets.SSH_PRIVATE_KEY_DEV }}"
+          host: ${{ env.EC2_HOST_DEV }}
+          username: ${{ env.EC2_USERNAME_DEV }}
+          key: ${{ env.SSH_PRIVATE_KEY_DEV }}
           port: 22
           script: |
-            chmod +x /home/ubuntu/dev-script/*.sh
-            /home/ubuntu/dev-script/install.sh 
-            /home/ubuntu/dev-script/build.sh "${{ env.ECR_REGISTRY }}" school-management "${{ env.AWS_REGION }}"
+            chmod +x dev-script/*.sh
+            dev-scripts/install.sh 
+            dev-scripts/build.sh ${{ env.ECR_REGISTRY }} school-management ${{ env.AWS_REGION }}
+
+      - uses: geekyeggo/delete-artifact@v3
+        with:
+          name: |
+            school-management-image-artifact
+            dev-script
+
+      - name: Reinstall bcrypt
+        run: npm install bcrypt --build-from-source
