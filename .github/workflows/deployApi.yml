@@ -25,12 +25,12 @@ jobs:
 
       - name: Login to ECR
         run: |
-          aws ecr get-login-password --region ${{ AWS_REGION }} | docker login --username AWS --password-stdin ${{ ECR_REGISTRY }}
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
       - name: Tag and push image to Amazon ECR
         run: |
-          docker tag school-management:latest ${{ ECR_REGISTRY }}:latest
-          docker push ${{ ECR_REGISTRY }}:latest
+          docker tag school-management:latest ${{ env.ECR_REGISTRY }}:latest
+          docker push ${{ env.ECR_REGISTRY }}:latest
 
   deploy-dev:
     runs-on: ubuntu-latest
@@ -39,7 +39,7 @@ jobs:
     steps:          
       - name: Checkout code
         uses: actions/checkout@v3
-        
+
       - name: Download dev scripts
         uses: actions/download-artifact@v3
         with:
@@ -49,8 +49,8 @@ jobs:
       - name: Copy scripts to dev-server
         uses: appleboy/scp-action@v0.1.4
         with:
-          host: "${{ EC2_HOST_DEV }}"
-          username: "${{ EC2_USERNAME_DEV }}"
+          host: "${{ env.EC2_HOST_DEV }}"
+          username: "${{ env.EC2_USERNAME_DEV }}"
           key: "${{ secrets.SSH_PRIVATE_KEY_DEV }}"
           port: 22
           source: dev-scripts/*
@@ -59,12 +59,9 @@ jobs:
       - name: Connect to dev-server
         uses: appleboy/ssh-action@master
         with:
-          host: "${{ EC2_HOST_DEV }}"
-          username: "${{ EC2_USERNAME_DEV }}"
+          host: "${{ env.EC2_HOST_DEV }}"
+          username: "${{ env.EC2_USERNAME_DEV }}"
           key: "${{ secrets.SSH_PRIVATE_KEY_DEV }}"
           port: 22
           script: |
-            chmod +x /home/ubuntu/dev-scripts/build.sh
-            chmod +x /home/ubuntu/dev-scripts/install.sh
-            /home/ubuntu/dev-scripts/install.sh 
-            /home/ubuntu/dev-scripts/build.sh ${{ ECR_REGISTRY }} school-management ${{ AWS_REGION }}
+    
