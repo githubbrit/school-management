@@ -10,6 +10,7 @@ env:
   SSH_PRIVATE_KEY_DEV: ${{ secrets.SSH_PRIVATE_KEY_DEV }}
   EC2_HOST_DEV: ${{ secrets.EC2_HOST_DEV }} 
   EC2_USERNAME_DEV: ${{ secrets.EC2_USERNAME_DEV }}
+  ECR_REGISTRY: "061039766524.dkr.ecr.ap-south-1.amazonaws.com/school-management"
 
 jobs:
   build:
@@ -18,22 +19,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
-      - name: Upload dev scripts
-        uses: actions/upload-artifact@v3
-        with:
-          name: dev-scripts
-          path: ./dev/scripts
-
       - name: Build Docker image
         run: |
           docker build -t school-management ./api
-          docker save school-management -o school-management.tar
 
-      - name: Publish school-management image artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: school-management-image-artifact
-          path: school-management.tar
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+      - name: Tag and push image to Amazon ECR
+        run: |
+          docker tag school-management:latest ${{ env.ECR_REGISTRY }}:latest
+          docker push ${{ env.ECR_REGISTRY }}:latest
 
   deploy-dev:
     runs-on: ubuntu-latest
@@ -43,36 +40,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
-      - name: Download images artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: school-management-image-artifact
-
-      - name: Load Docker images
-        run: |
-          docker load -i school-management.tar
-
-      - name: Configure AWS credentials
-        run: |
-          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
-          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          aws configure set region "${{ env.AWS_REGION }}"
-
-      - name: Login to ECR
-        env:
-          AWS_REGION: ap-south-1
-          ECR_REGISTRY: 061039766524.dkr.ecr.ap-south-1.amazonaws.com/school-management
-        run: |
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-
-      - name: Build, tag, and push image to Amazon ECR
-        env:
-          ECR_REGISTRY: 061039766524.dkr.ecr.ap-south-1.amazonaws.com/school-management
-        run: |
-          echo "ECR_REGISTRY: $ECR_REGISTRY"
-          docker tag school-management "$ECR_REGISTRY:latest"
-          docker push "$ECR_REGISTRY:latest"
-
       - name: Download dev scripts
         uses: actions/download-artifact@v3
         with:
@@ -100,4 +67,4 @@ jobs:
             chmod +x /home/ubuntu/dev-scripts/build.sh
             chmod +x /home/ubuntu/dev-scripts/install.sh
             /home/ubuntu/dev-scripts/install.sh 
-            /home/ubuntu/dev-scripts/build.sh "$ECR_REGISTRY" school-management "$AWS_REGION"
+            /home/ubuntu/dev-scripts/build.sh ${{ env.ECR_REGISTRY }} school-management ${{ env.AWS_REGION }}
