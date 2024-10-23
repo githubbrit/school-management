@@ -66,9 +66,12 @@ jobs:
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
       - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: 061039766524.dkr.ecr.ap-south-1.amazonaws.com/school-management
         run: |
-          docker tag school-management $ECR_REGISTRY:latest
-          docker push $ECR_REGISTRY:latest
+          echo "ECR_REGISTRY: $ECR_REGISTRY"
+          docker tag school-management "$ECR_REGISTRY:latest"
+          docker push "$ECR_REGISTRY:latest"
 
       - name: Download dev scripts
         uses: actions/download-artifact@v3
@@ -97,4 +100,4 @@ jobs:
             chmod +x /home/ubuntu/dev-scripts/build.sh
             chmod +x /home/ubuntu/dev-scripts/install.sh
             /home/ubuntu/dev-scripts/install.sh 
-            /home/ubuntu/dev-scripts/build.sh $ECR_REGISTRY school-management $AWS_REGION
+            /home/ubuntu/dev-scripts/build.sh "$ECR_REGISTRY" school-management "$AWS_REGION"
