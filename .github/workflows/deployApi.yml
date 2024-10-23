@@ -76,7 +76,7 @@ jobs:
           key: "${{ secrets.SSH_PRIVATE_KEY_DEV }}"
           port: 22
           script: |
-            chmod +x /home/ubuntu/dev-scripts/build.sh
-            chmod +x /home/ubuntu/dev-scripts/install.sh
-            /home/ubuntu/dev-scripts/install.sh 
-            /home/ubuntu/dev-scripts/build.sh "${{ env.ECR_REGISTRY }}" school-management "${{ env.AWS_REGION }}"
+            chmod +x /home/ubuntu/dev-script/build.sh
+            chmod +x /home/ubuntu/dev-script/install.sh
+            /home/ubuntu/dev-script/install.sh 
+            /home/ubuntu/dev-script/build.sh "${{ env.ECR_REGISTRY }}" school-management "${{ env.AWS_REGION }}"
